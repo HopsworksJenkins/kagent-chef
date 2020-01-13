@@ -20,6 +20,7 @@ action :add do
         command     "#{node["install"]["sudoers"]["scripts_dir"]}/#{new_resource.script_name}"
         users       new_resource.user
         runas       new_resource.run_as
+        nopasswd    true
         only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
     end 
 end
