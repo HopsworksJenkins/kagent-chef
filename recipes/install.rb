@@ -21,15 +21,7 @@ end
 
 case node["platform_family"]
 when "debian"
-  bash "apt_update_install_build_tools" do
-    user "root"
-    code <<-EOF
-   apt-get update -y 
-   apt-get install build-essential -y 
-   apt-get install libssl-dev -y 
-   apt-get install jq -y 
- EOF
-  end
+  package ["python2.7", "python2.7-dev", "build-essential", "libssl-dev", "jq"]
 
 # Change lograte policy
   cookbook_file '/etc/logrotate.d/rsyslog' do
@@ -39,9 +31,6 @@ when "debian"
     mode '0644'
   end
 
-  package "python2.7" 
-  package "python2.7-dev"
-
 when "rhel"
 
   if node['rhel']['epel'].downcase == "true"
@@ -49,16 +38,8 @@ when "rhel"
   end
 
 # gcc, gcc-c++, kernel-devel are the equivalent of "build-essential" from apt.
-  package "gcc"
-  package "gcc-c++"
-  package "kernel-devel" 
-  package "openssl"
-  package "openssl-devel"
-  package "openssl-libs" 
-  package "python" 
-  package "python-pip" 
-  package "python-devel" 
-  package "jq"
+  package ["gcc", "gcc-c++", "kernel-devel", "openssl", "openssl-devel", "openssl-libs", "python", "python-pip", "python-devel", "jq"]
+
   # Change lograte policy
   cookbook_file '/etc/logrotate.d/syslog' do
     source 'syslog.centos'
@@ -67,13 +48,6 @@ when "rhel"
     mode '0644'
   end
 end
-
-
-#installs python 2
-# include_recipe "poise-python"
-# The openssl::upgrade recipe doesn't install openssl-dev/libssl-dev, needed by python-ssl
-# Now using packages in ubuntu/centos.
-#include_recipe "openssl::upgrade"
 
 group node["kagent"]["group"] do
   action :create
@@ -233,15 +207,7 @@ cookbook_file "#{node["kagent"]["certs_dir"]}/csr.py" do
   mode 0710
 end
 
-template "#{node["kagent"]["certs_dir"]}/run_csr.sh" do
-  source 'run_csr.sh.erb'
-  owner node['kagent']['user']
-  group node['kagent']['group']
-  mode 0710
-end
-
-
-['start-agent.sh', 'stop-agent.sh', 'restart-agent.sh', 'get-pid.sh'].each do |script|
+['start-agent.sh', 'stop-agent.sh', 'restart-agent.sh', 'get-pid.sh', 'status-service.sh'].each do |script|
   Chef::Log.info "Installing #{script}"
   template "#{node["kagent"]["home"]}/bin/#{script}" do
     source "#{script}.erb"
@@ -250,16 +216,6 @@ end
     mode 0750
   end
 end 
-
-['status-service.sh', 'gpu-kill.sh', 'gpu-killhard.sh'].each do |script|
-  template  "#{node["kagent"]["home"]}/bin/#{script}" do
-    source "#{script}.erb"
-    owner "root"
-    group node["kagent"]["group"]
-    mode 0750
-  end
-end
-
 
 # set_my_hostname
 if node["vagrant"] === "true" || node["vagrant"] == true 
@@ -279,34 +235,6 @@ if node.attribute?("jupyter")
   end
 end
 
-hadoop_version = "2.8.2.3"
-if node.attribute?("hops") 
-  if node["hops"].attribute?("version") 
-    hadoop_version = node['hops']['version']
-  end
-end
-
-
-template "#{node["kagent"]["home"]}/bin/conda.sh" do
-  source "conda.sh.erb"
-  owner node["kagent"]["user"]
-  group node["kagent"]["group"]
-  mode "750"
-  action :create
-end
-
-template "#{node["kagent"]["home"]}/bin/anaconda_env.sh" do
-  source "anaconda_env.sh.erb"
-  owner node["kagent"]["user"]
-  group node["kagent"]["group"]
-  mode "750"
-  action :create
-  variables({
-        :jupyter_python => jupyter_python
-#        :hadoop_version => hadoop_version
-  })
-end
-
 template "#{node["kagent"]["home"]}/bin/anaconda_sync.sh" do
   source "anaconda_sync.sh.erb"
   owner node["kagent"]["user"]
@@ -323,19 +251,30 @@ ruby_block "whereis_systemctl" do
   end
 end
 
-template "/etc/sudoers.d/kagent" do
-  source "sudoers.erb"
-  owner "root"
-  group "root"
-  mode "0440"
+sudo "kagent_systemctl" do
+  users    node["kagent"]["user"]
+  commands lazy {["start", "stop", "restart"].map(|command| => "#{node['kagent']['systemctl_path']} #{command} *")}
+  nopasswd true
+  action   :create
+  only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
+end
+
+kagent_sudoers "anaconda_env" do 
+  script_name "anaconda_env.sh"
+  template    "anaconda_env.sh.erb"
+  user        node["kagent"]["user"]
+  # TODO(Fabio): this should not be so open
+  run_as      "ALL"
   variables({
-                :user => node["kagent"]["user"],
-                :conda =>  "#{node["kagent"]["base_dir"]}/bin/conda.sh",
-                :anaconda =>  "#{node["kagent"]["base_dir"]}/bin/anaconda_env.sh",
-                :rotate_service_key => "#{node[:kagent][:certs_dir]}/run_csr.sh",
-                :gpu_kill => "#{node["kagent"]["base_dir"]}/bin/gpu-kill.sh",
-                :gpu_killhard => "#{node["kagent"]["base_dir"]}/bin/gpu-killhard.sh",
-                :systemctl_path => lazy { node['kagent']['systemctl_path'] }
-              })
-  action :create
-end  
+        :jupyter_python => jupyter_python
+  })
+end
+
+["conda", "run_csr", "gpu-kill", "gpu-killhard"].each do |script|
+  kagent_sudoers script do
+    script_name "#{script}.sh"
+    template    "#{script}.sh.erb"
+    user        node["kagent"]["user"]
+    run_as      "ALL"
+  end
+end
