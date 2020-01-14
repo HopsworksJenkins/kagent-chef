@@ -378,7 +378,7 @@ class CondaCommandsHandler:
         install_jupyter = str(command['installJupyter']).lower()
 
         tempfile_fd = None
-        script = kconfig.bin_dir + "/anaconda_env.sh"
+        script = kconfig.sbin_dir + "/anaconda_env.sh"
         logger.info("sudo -u {1} {0} {2} {3} {4} '{5}' {6} {7}".format(script, user, op, proj, arg, offline, kconfig.hadoop_home, install_jupyter))
         msg=""
         try:
@@ -431,7 +431,7 @@ class CondaCommandsHandler:
             channelUrl="default"
         if not version:
             version=""
-        script = kconfig.bin_dir + "/conda.sh"
+        script = kconfig.sbin_dir + "/conda.sh"
 
         try:
             command_str = "sudo -u {1} {0} {2} {3} {4} {5} {6} {7}".format(script, user, op, proj, channelUrl, installType, lib, version)
@@ -483,7 +483,7 @@ class SystemCommandsHandler:
         conda_bin = os.path.join(kconfig.conda_dir, 'bin', 'conda')
         for env in to_be_removed:
             try:
-                script = os.path.join(kconfig.bin_dir, 'anaconda_env.sh')
+                script = os.path.join(kconfig.sbin_dir, 'anaconda_env.sh')
                 subprocess.check_call(['sudo', '-u', exec_user, script, 'REMOVE', env, '', '', '', ''], cwd=kconfig.conda_dir)
                 logger.info("Removed Anaconda environment {0}".format(env))
                 self._conda_envs_monitor_list.remove(env)
