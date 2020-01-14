@@ -17,7 +17,7 @@ action :add do
     end
 
     sudo new_resource.name do 
-        command     "#{node["install"]["sudoers"]["scripts_dir"]}/#{new_resource.script_name}"
+        commands    ["#{node["install"]["sudoers"]["scripts_dir"]}/#{new_resource.script_name}"]
         users       new_resource.user
         runas       new_resource.run_as
         nopasswd    true

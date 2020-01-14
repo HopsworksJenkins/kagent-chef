@@ -253,7 +253,7 @@ end
 
 sudo "kagent_systemctl" do
   users    node["kagent"]["user"]
-  commands lazy {["start", "stop", "restart"].map(|command| => "#{node['kagent']['systemctl_path']} #{command} *")}
+  commands lazy {["start", "stop", "restart"].map{|command| "#{node['kagent']['systemctl_path']} #{command} *"}}
   nopasswd true
   action   :create
   only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
