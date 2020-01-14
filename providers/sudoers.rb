@@ -1,5 +1,4 @@
 action :add do 
-
     # Make sure the directory exists before writing the template 
     directory node["install"]["sudoers"]["scripts_dir"] do
         owner 'root'
