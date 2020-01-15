@@ -273,7 +273,7 @@ end
 kagent_sudoers "anaconda_env" do 
   script_name "anaconda_env.sh"
   template    "anaconda_env.sh.erb"
-  user        node["kagent"]["user"]
+  user        node["conda"]["user"]
   run_as      node['conda']['user']
   variables({
         :jupyter_python => jupyter_python
@@ -283,15 +283,15 @@ end
 kagent_sudoers "conda" do
     script_name "conda.sh"
     template    "conda.sh.erb"
-    user        node["kagent"]["user"]
+    user        node["conda"]["user"]
     run_as      node['conda']['user']
 end
 
 kagent_sudoers "run_csr" do
     script_name "run_csr.sh"
     template    "run_csr.sh.erb"
-    user        node["kagent"]["user"]
-    run_as      node['conda']['user']
+    user        node["kagent"]["certs_use"]
+    run_as      node['kagent']['certs_user']
 end
 
 ["gpu-kill", "gpu-killhard"].each do |script|
