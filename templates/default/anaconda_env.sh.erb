@@ -165,24 +165,24 @@ elif [ "$OP" == "CREATE" ] ; then
     PY=${ARG//\./}
     
     if [ "$PY" == "27" ] ; then
-      ${CONDA_DIR}/bin/conda create -n $PROJECT --clone python27 -y -q $OFFLINE"
+      ${CONDA_DIR}/bin/conda create -n $PROJECT --clone python27 -y -q $OFFLINE
     else
-      ${CONDA_DIR}/bin/conda create -n $PROJECT --clone python36 -y -q $OFFLINE"	
+      ${CONDA_DIR}/bin/conda create -n $PROJECT --clone python36 -y -q $OFFLINE
     fi
 
     
 elif [ "$OP" == "LIST_ENVS" ] ; then
-  ${CONDA_DIR}/bin/conda env list --json > /tmp/conda_envs.json"    
+  ${CONDA_DIR}/bin/conda env list --json > /tmp/conda_envs.json  
 
 elif [ "$OP" == "LIST" ] ; then
-  ${CONDA_DIR}/bin/conda list -n $PROJECT --json > /tmp/${PROJECT}__conda_list.json"
+  ${CONDA_DIR}/bin/conda list -n $PROJECT --json > /tmp/${PROJECT}__conda_list.json
 
 elif [ "$OP" == "CLONE" ] ; then
-  ${CONDA_DIR}/bin/conda create -n $PROJECT --clone $CLONE -y -q $OFFLINE"
+  ${CONDA_DIR}/bin/conda create -n $PROJECT --clone $CLONE -y -q $OFFLINE
 
   # Enable jupyter notebook extensions 
-  ${CONDA_DIR}/envs/${PROJECT}/bin/jupyter contrib nbextension install --sys-prefix"
-  ${CONDA_DIR}/envs/${PROJECT}/bin/jupyter serverextension enable jupyter_nbextensions_configurator --sys-prefix"
+  ${CONDA_DIR}/envs/${PROJECT}/bin/jupyter contrib nbextension install --sys-prefix
+  ${CONDA_DIR}/envs/${PROJECT}/bin/jupyter serverextension enable jupyter_nbextensions_configurator --sys-prefix
 
 elif [ "$OP" == "LIB_SYNC" ] ; then
 
@@ -208,7 +208,7 @@ elif [ "$OP" == "LIB_SYNC" ] ; then
 	# If i cannot find the library installed locally, install it in this project
 	grep "$i" "/tmp/${1}.libs"
 	if [ $? -ne 0 ] ; then
-	    su <%= node['conda']['user'] %> -c "${CONDA_DIR}/bin/conda install -n $1 -q -y $2 $i"
+	   "${CONDA_DIR}/bin/conda install -n $1 -q -y $2 $i
 	fi
     done
     
@@ -218,13 +218,13 @@ elif [ "$OP" == "REMOVE" ] ; then
        echo "Cannot remove environment that doesn't exist"
        exit 0
     fi
-    ${CONDA_DIR}/bin/conda-env remove -n $PROJECT -y -q"
+    ${CONDA_DIR}/bin/conda-env remove -n $PROJECT -y -q
     rm -rf "${CONDA_DIR}/envs/${PROJECT}"
 
 elif [ "$OP" == "CLEAN" ] ; then
-    ${CONDA_DIR}/bin/conda clean --all -y"
+    ${CONDA_DIR}/bin/conda clean --all -y
 elif [ "$OP" == "UPDATE" ] ; then
-    ${CONDA_DIR}/bin/conda update conda -y"
+    ${CONDA_DIR}/bin/conda update conda -y
 else
     exit -1
 fi
