@@ -3,7 +3,7 @@ action :add do
     directory node["install"]["sudoers"]["scripts_dir"] do
         owner 'root'
         group 'root'
-        mode '0700'
+        mode '0711'
         action :create
     end
 
@@ -11,7 +11,7 @@ action :add do
         source new_resource.template
         owner  'root'
         group  'root'
-        mode   '0700'
+        mode   '0711'
         action :create
     end
 

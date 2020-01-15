@@ -26,6 +26,7 @@ hostname = <%= @hostname %>
 group-name = <%= node[:kagent][:group_name] %>
 hadoop-home = <%= @hops_dir %>/hadoop
 certs-dir = <%= node[:kagent][:certs_dir] %>
+certs-user = <%= node['kagent']['certs_user'] %>
 certificate-file = <%= node[:kagent][:certs_dir] %>/pub.pem
 key-file = <%= node[:kagent][:certs_dir] %>/priv.key
 server-keystore = <%= @kstore %>
@@ -34,6 +35,7 @@ keystore-script = <%= node[:kagent][:base_dir] %>/keystore.sh
 state-store = <%= node[:kagent][:etc]%>/state_store
 password = <%= @agent_password %>
 conda-dir = <%= node[:conda][:home] %>
+conda-user = <%= node["conda"]["user"] %>
 conda-envs-blacklist = <%= @blacklisted_envs %>
 conda-gc-interval = <%= node[:kagent][:conda_gc_interval] %>
 elk-key-file= <%= node[:kagent][:certs][:elastic_admin_key] %>

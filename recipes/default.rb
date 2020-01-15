@@ -26,7 +26,6 @@ if agent_password.empty?
 end
 
 
-
 if !node['install']['cloud'].empty? 
   template "#{node['kagent']['base_dir']}/bin/edit-config-ini-inplace.py" do
     source "edit-config-ini-inplace.py.erb"
@@ -196,7 +195,7 @@ template "#{node["kagent"]["etc"]}/config.ini" do
   source "config.ini.erb"
   owner node["kagent"]["user"]
   group node["kagent"]["group"]
-  mode 0600
+  mode 0640
   action :create
   variables({
               :rest_url => "https://#{dashboard_endpoint}/",
@@ -216,19 +215,13 @@ end
   notifies :restart, "service[#{service_name}]", :delayed
 end
 
-
-template "#{node["kagent"]["home"]}/keystore.sh" do
+template "#{node["kagent"]["certs_dir"]}/keystore.sh" do
   source "keystore.sh.erb"
-  owner node["kagent"]["user"]
-  group node["kagent"]["group"]
+  owner node["kagent"]["certs_user"]
+  group node["kagent"]["certs_group"]
   mode 0700
-  variables({
-              :fqdn => hostname,
-              :directory => node["kagent"]["keystore_dir"],
-              :keystorepass => node["hopsworks"]["master"]["password"]
-            })
+  variables({:fqdn => hostname})
 end
-  
 
 if node["kagent"]["test"] == false && (not conda_helpers.is_upgrade)
     kagent_keys "sign-certs" do
@@ -246,21 +239,11 @@ bash "convert private key to PKCS#1 format on update" do
   code <<-EOH                                                                                                       
        openssl rsa -in #{node['kagent']['certs_dir']}/priv.key -out #{node['kagent']['certs_dir']}/priv.key.rsa
        chmod 640 #{node['kagent']['certs_dir']}/priv.key.rsa
-       chown root:#{node['kagent'['certs_group']]} #{node['kagent']['certs_dir']}/priv.key.rsa
+       chown #{node['kagent']}:#{node['kagent'['certs_group']]} #{node['kagent']['certs_dir']}/priv.key.rsa
   EOH
   only_if { conda_helpers.is_upgrade and File.exists?("#{node['kagent']['certs_dir']}/priv.key")}
 end
 
-execute "rm -f #{node["kagent"]["pid_file"]}"
-
-if node["kagent"]["cleanup_downloads"] == 'true'
-
-  file "/tmp/#{d}*.tgz" do
-    action :delete
-    ignore_failure true
-  end
-
-end
 
 if node["install"]["addhost"] == 'true'
 

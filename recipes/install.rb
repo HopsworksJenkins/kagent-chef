@@ -61,6 +61,16 @@ group node["kagent"]["certs_group"] do
   not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
 
+user node["kagent"]["certs_user"] do
+  gid node["kagent"]["certs_group"]
+  action :create
+  manage_home false 
+  system true
+  shell "/bin/nologin"
+  not_if "getent passwd #{node["kagent"]["certs_user"]}"
+  not_if { node['install']['external_users'].casecmp("true") == 0 }
+end
+
 user node["kagent"]["user"] do
   gid node["kagent"]["group"]
   action :create
@@ -74,7 +84,8 @@ end
 
 group node["kagent"]["group"] do
   action :modify
-  members ["#{node["kagent"]["user"]}"]
+  # Certs user is in the kagnet group so it can also modify the Kagent state store. 
+  members [node["kagent"]["user"], node["kagent"]["certs_user"]]
   append true
   not_if { node['install']['external_users'].casecmp("true") == 0 }
 end
@@ -125,7 +136,7 @@ end
 directory "#{node["kagent"]["etc"]}/state_store" do
   owner node["kagent"]["user"]
   group node["kagent"]["group"]
-  mode "700"
+  mode "770"
   action :create
   not_if { File.directory?("#{node["kagent"]["etc"]}/state_store") }
 end
@@ -202,7 +213,7 @@ end
 
 cookbook_file "#{node["kagent"]["certs_dir"]}/csr.py" do
   source 'csr.py'
-  owner node["kagent"]["user"]
+  owner node["kagent"]["certs_user"]
   group node["kagent"]["certs_group"]
   mode 0710
 end
@@ -263,14 +274,27 @@ kagent_sudoers "anaconda_env" do
   script_name "anaconda_env.sh"
   template    "anaconda_env.sh.erb"
   user        node["kagent"]["user"]
-  # TODO(Fabio): this should not be so open
-  run_as      "ALL"
+  run_as      node['conda']['user']
   variables({
         :jupyter_python => jupyter_python
   })
 end
 
-["conda", "run_csr", "gpu-kill", "gpu-killhard"].each do |script|
+kagent_sudoers "conda" do
+    script_name "conda.sh"
+    template    "conda.sh.erb"
+    user        node["kagent"]["user"]
+    run_as      node['conda']['user']
+end
+
+kagent_sudoers "run_csr" do
+    script_name "run_csr.sh"
+    template    "run_csr.sh.erb"
+    user        node["kagent"]["user"]
+    run_as      node['conda']['user']
+end
+
+["gpu-kill", "gpu-killhard"].each do |script|
   kagent_sudoers script do
     script_name "#{script}.sh"
     template    "#{script}.sh.erb"

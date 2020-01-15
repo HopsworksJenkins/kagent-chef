@@ -381,10 +381,6 @@ if __name__ == '__main__':
     LOG.info("Public IP: {0}".format(config.public_ip))
     LOG.info("Private IP: {0}".format(config.private_ip))
 
-    agent_pid = str(os.getpid())
-    file(config.agent_pidfile, 'w').write(agent_pid)
-    LOG.info("Hops CSR-agent PID: {0}".format(agent_pid))
-
     LOG.info("Restoring state from state-store")
     state_store_factory = StateStoreFactory(config.state_store_location)
     state_store = state_store_factory.get_instance('file')
