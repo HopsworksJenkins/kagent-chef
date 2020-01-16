@@ -215,6 +215,17 @@ end
   notifies :restart, "service[#{service_name}]", :delayed
 end
 
+# For upgrades we need to CHOWN the directory and the files underneat to certs:certs
+bash "chown_#{node['kagent']['certs_dir']}" do
+  code <<-EOH
+    chown -R #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['certs_dir']}
+    chown #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['etc']}/state_store/crypto_material_state.pkl
+  EOH
+  action :run
+  only_if { ::File.isDir?(node['kagent']['certs_dir'])}
+end
+
+
 template "#{node["kagent"]["certs_dir"]}/keystore.sh" do
   source "keystore.sh.erb"
   owner node["kagent"]["certs_user"]
