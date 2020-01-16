@@ -2,7 +2,7 @@ action :csr do
 
   bash "sign-local-csr-key" do
     user node['kagent']['certs_user']
-    group node['kagent']['certs_group']
+    group node['kagent']['group']
     retries 4
     retry_delay 10
     timeout 300
@@ -18,8 +18,8 @@ end
 
 action :combine_certs do 
   bash "append hops ca certificates to chef cacerts" do
-    user node['kagent']['certs_user']
-    group node['kagent']['certs_group']
+    user "root" 
+    group "root" 
     code <<-EOH
       set -eo pipefail
       echo "Hops Root CA " >>  /opt/chefdk/embedded/ssl/certs/cacert.pem
@@ -78,9 +78,9 @@ action :generate_elastic_admin_certificate do
     code <<-EOF
       set -eo pipefail
       export PYTHON_EGG_CACHE=/tmp
-      #{node[:conda][:base_dir]}/envs/hops-system/bin/python #{node[:kagent][:certs_dir]}/csr.py \
-      -c #{node[:kagent][:etc]}/config.ini elkadmin
-      chown #{node['kagnet']['certs_user']}:#{node["kagent"]["certs_group"]} #{node["kagent"]["certs"]["elastic_admin_key"]}
+      #{node["conda"]["base_dir"]}/envs/hops-system/bin/python #{node["kagent"]["certs_dir"]}/csr.py \
+      -c #{node["kagent"]["etc"]}/config.ini elkadmin
+      chown #{node['kagent']['certs_user']}:#{node["kagent"]["certs_group"]} #{node["kagent"]["certs"]["elastic_admin_key"]}
       chmod 640 #{node["kagent"]["certs"]["elastic_admin_key"]}
       chown #{node['kagent']['certs_user']}:#{node["kagent"]["certs_group"]} #{node["kagent"]["certs"]["elastic_admin_certificate"]}
       chmod 640 #{node["kagent"]["certs"]["elastic_admin_certificate"]}

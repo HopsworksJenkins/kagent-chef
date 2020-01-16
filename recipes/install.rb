@@ -149,7 +149,7 @@ directory node["kagent"]["home"] do
 end
 
 directory node["kagent"]["certs_dir"] do
-  owner node["kagent"]["user"]
+  owner node["kagent"]["certs_user"]
   group node["kagent"]["certs_group"]
   mode "750"
   action :create
@@ -169,7 +169,7 @@ directory "#{node["kagent"]["home"]}/bin" do
 end
 
 directory node["kagent"]["keystore_dir"] do
-  owner "root"
+  owner node["kagent"]["certs_user"]
   group node["kagent"]["certs_group"]
   mode "750"
   action :create
@@ -218,7 +218,8 @@ cookbook_file "#{node["kagent"]["certs_dir"]}/csr.py" do
   mode 0710
 end
 
-['start-agent.sh', 'stop-agent.sh', 'restart-agent.sh', 'get-pid.sh', 'status-service.sh'].each do |script|
+['start-agent.sh', 'stop-agent.sh', 'restart-agent.sh', 'get-pid.sh', 'status-service.sh', 
+  "gpu-kill.sh", "gpu-killhard.sh"].each do |script|
   Chef::Log.info "Installing #{script}"
   template "#{node["kagent"]["home"]}/bin/#{script}" do
     source "#{script}.erb"
@@ -270,11 +271,20 @@ sudo "kagent_systemctl" do
   only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
 end
 
+sudo "nvidia-smi" do
+  users       node["kagent"]["user"]
+  commands    ["nvidia-smi"] 
+  nopasswd    true
+  action      :create
+  only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
+end
+
 kagent_sudoers "anaconda_env" do 
   script_name "anaconda_env.sh"
   template    "anaconda_env.sh.erb"
-  user        node["conda"]["user"]
-  run_as      node['conda']['user']
+  user        node["kagent"]["user"]
+  group       node["conda"]["group"]
+  run_as      node["conda"]["user"]
   variables({
         :jupyter_python => jupyter_python
   })
@@ -283,22 +293,15 @@ end
 kagent_sudoers "conda" do
     script_name "conda.sh"
     template    "conda.sh.erb"
-    user        node["conda"]["user"]
-    run_as      node['conda']['user']
+    user        node["kagent"]["user"]
+    group       node["conda"]["group"]
+    run_as      node["conda"]["user"]
 end
 
 kagent_sudoers "run_csr" do
     script_name "run_csr.sh"
     template    "run_csr.sh.erb"
-    user        node["kagent"]["certs_use"]
-    run_as      node['kagent']['certs_user']
-end
-
-["gpu-kill", "gpu-killhard"].each do |script|
-  kagent_sudoers script do
-    script_name "#{script}.sh"
-    template    "#{script}.sh.erb"
     user        node["kagent"]["user"]
-    run_as      "ALL"
-  end
+    group       node["kagent"]["certs_group"]
+    run_as      node["kagent"]["certs_user"]
 end

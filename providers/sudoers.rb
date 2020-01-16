@@ -10,8 +10,8 @@ action :add do
     template "#{node["install"]["sudoers"]["scripts_dir"]}/#{new_resource.script_name}" do
         source new_resource.template
         owner  'root'
-        group  'root'
-        mode   '0711'
+        group  new_resource.group 
+        mode   '071'
         action :create
     end
 

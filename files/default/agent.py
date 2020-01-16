@@ -436,7 +436,7 @@ class CondaCommandsHandler:
             logger.info("Executing libOp command {0}".format(command_str))
             self._log_conda_command(proj, op, lib, version, -1, 'WORKING')
             msg = subprocess.check_output(['sudo', '-u', kconfig.conda_user, script, op, proj, channelUrl, installType, lib, version], cwd=kconfig.conda_dir, stderr=subprocess.STDOUT)
-            logger.info("Lib op finished without error."
+            logger.info("Lib op finished without error.")
             logger.info("{0}".format(msg))
             command['status'] = 'SUCCESS'
             self._log_conda_command(proj, op, lib, version, 0, 'SUCCESS')
