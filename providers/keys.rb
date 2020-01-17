@@ -71,7 +71,7 @@ end
 action :generate_elastic_admin_certificate do
   bash "sign-admin-elastic-key" do
     user node['kagent']['certs_user']
-    group node['kagent']['certs_group']
+    group node['kagent']['group']
     retries 4
     retry_delay 10
     timeout 300
