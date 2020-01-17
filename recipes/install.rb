@@ -271,14 +271,6 @@ sudo "kagent_systemctl" do
   only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
 end
 
-sudo "nvidia-smi" do
-  users       node["kagent"]["user"]
-  commands    ["nvidia-smi"] 
-  nopasswd    true
-  action      :create
-  only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
-end
-
 kagent_sudoers "anaconda_env" do 
   script_name "anaconda_env.sh"
   template    "anaconda_env.sh.erb"

@@ -1,6 +1,24 @@
 require 'inifile'
 require 'securerandom'
 
+ruby_block "whereis_nvidia-smi" do
+  ignore_failure true 
+  block do
+    Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
+    systemctl_path = shell_out("which nvidia-smi").stdout
+    node.override['kagent']['nvidia-smi_path'] = systemctl_path.strip
+  end
+end
+
+sudo "nvidia-smi" do
+  users       node["kagent"]["user"]
+  commands    lazy {[node['kagent']['nvidia-smi_path']]}
+  nopasswd    true
+  action      :create
+  only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
+  not_if     { node['kagent']['nvidia-smi_path'].empty? } 
+end
+
 service_name = "kagent"
 
 agent_password = ""
