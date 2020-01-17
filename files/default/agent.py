@@ -378,7 +378,7 @@ class CondaCommandsHandler:
 
         tempfile_fd = None
         script = kconfig.sbin_dir + "/anaconda_env.sh"
-        logger.info("sudo -u {1} {0} {2} {3} {4} '{5}' {6} {7}".format(script, kconfig.conda_user, p, proj, arg, offline, kconfig.hadoop_home, install_jupyter))
+        logger.info("sudo -u {0} {1} {2} {3} {4} '{5}' {6} {7}".format(kconfig.conda_user, script, p, proj, arg, offline, kconfig.hadoop_home, install_jupyter))
         msg=""
         try:
             self._log_conda_command(proj, op, proj, arg, -1, 'WORKING')
@@ -432,7 +432,7 @@ class CondaCommandsHandler:
         script = kconfig.sbin_dir + "/conda.sh"
 
         try:
-            command_str = "sudo -u {1} {0} {2} {3} {4} {5} {6} {7}".format(script, kconfig.conda_user, op, proj, channelUrl, installType, lib, version)
+            command_str = "sudo -u {0} {1} {2} {3} {4} {5} {6} {7}".format(kconfig.conda_user, script, op, proj, channelUrl, installType, lib, version)
             logger.info("Executing libOp command {0}".format(command_str))
             self._log_conda_command(proj, op, lib, version, -1, 'WORKING')
             msg = subprocess.check_output(['sudo', '-u', kconfig.conda_user, script, op, proj, channelUrl, installType, lib, version], cwd=kconfig.conda_dir, stderr=subprocess.STDOUT)

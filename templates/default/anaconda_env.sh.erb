@@ -186,7 +186,7 @@ elif [ "$OP" == "CLONE" ] ; then
 
 elif [ "$OP" == "LIB_SYNC" ] ; then
 
-    ${CONDA_DIR}/bin/conda list -n $1 --json > /tmp/${1}.json"
+    ${CONDA_DIR}/bin/conda list -n $1 --json > /tmp/${1}.json
     if [ $? -ne 0 ] ; then
 	echo "Problem listing conda libraries for project $1"
 	exit 2
