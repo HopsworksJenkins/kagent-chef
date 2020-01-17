@@ -16,7 +16,7 @@ sudo "nvidia-smi" do
   nopasswd    true
   action      :create
   only_if     { node["install"]["sudoers"]["rules"].casecmp("true") == 0 }
-  not_if     { node['kagent']['nvidia-smi_path'].empty? } 
+  not_if      { node['kagent']['nvidia-smi_path'].empty? } 
 end
 
 service_name = "kagent"
@@ -237,11 +237,19 @@ end
 bash "chown_#{node['kagent']['certs_dir']}" do
   code <<-EOH
     chown -R #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['certs_dir']}
+  EOH
+  action :run
+  only_if { ::Dir.exists?(node['kagent']['certs_dir'])}
+end
+
+bash "chown_#{node['kagent']['certs_dir']}" do
+  code <<-EOH
     chown #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['etc']}/state_store/crypto_material_state.pkl
   EOH
   action :run
-  only_if { ::File.isDir?(node['kagent']['certs_dir'])}
+  only_if { ::File.exists?("#{node['kagent']['etc']}/state_store/crypto_material_state.pkl")}
 end
+
 
 
 template "#{node["kagent"]["certs_dir"]}/keystore.sh" do
