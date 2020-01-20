@@ -11,7 +11,7 @@ action :add do
         source new_resource.template
         owner  'root'
         group  new_resource.group 
-        mode   '0710'
+        mode   '0750'
         action :create
     end
 

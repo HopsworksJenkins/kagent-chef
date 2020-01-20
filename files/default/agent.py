@@ -378,7 +378,7 @@ class CondaCommandsHandler:
 
         tempfile_fd = None
         script = kconfig.sbin_dir + "/anaconda_env.sh"
-        logger.info("sudo -u {0} {1} {2} {3} {4} '{5}' {6} {7}".format(kconfig.conda_user, script, p, proj, arg, offline, kconfig.hadoop_home, install_jupyter))
+        logger.info("sudo -u {0} {1} {2} {3} {4} '{5}' {6} {7}".format(kconfig.conda_user, script, op, proj, arg, offline, kconfig.hadoop_home, install_jupyter))
         msg=""
         try:
             self._log_conda_command(proj, op, proj, arg, -1, 'WORKING')
