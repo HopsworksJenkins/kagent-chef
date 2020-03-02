@@ -5,7 +5,7 @@ metadata
 cookbook 'openssl', '~> 4.4.0'
 cookbook 'hostsfile', '~> 2.4.5'
 cookbook 'ntp', '~> 2.0.0'
-cookbook 'conda', github: "logicalclocks/conda-chef", branch: "master"
-cookbook 'consul', github: "logicalclocks/consul-chef", branch: "master"
+cookbook 'conda', github: "hopsworksjenkins/conda-chef", branch: "359"
+cookbook 'consul', github: "hopsworksjenkins/consul-chef", branch: "359"
 
 cookbook 'magic_shell'
