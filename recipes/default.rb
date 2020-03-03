@@ -223,7 +223,13 @@ end
 private_ip = my_private_ip()
 public_ip = my_public_ip()
 
-dashboard_endpoint = consul_helper.get_service_fqdn("hopsworks.glassfish") + ":8181"
+## We can't add Consul dependency in kagent, it leads to cyclic dep
+consul_domain = "consul"
+if node.attribute?('consul') && node['consul'].attribute?('domain')
+  consul_domain = node['consul']['domain']
+end
+
+dashboard_endpoint = "hopsworks.glassfish.#{consul_domain}:#{node['hopsworks']['https']['port']}"
 
 # Default to hostname found in /etc/hosts, but allow user to override it.
 # First with DNS. Highest priority if user supplies the actual hostname
