@@ -19,7 +19,6 @@ depends 'hostsfile'
 depends 'ntp'
 depends 'conda'
 depends 'magic_shell'
-depends 'consul'
 
 
 recipe "kagent::install", "Installs the Karamel agent and python dependencies"
