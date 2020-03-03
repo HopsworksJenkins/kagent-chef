@@ -229,7 +229,14 @@ if node.attribute?('consul') && node['consul'].attribute?('domain')
   consul_domain = node['consul']['domain']
 end
 
-dashboard_endpoint = "hopsworks.glassfish.#{consul_domain}:#{node['hopsworks']['https']['port']}"
+hopsworks_port = "8181"
+if node.attribute? "hopsworks"
+  if node["hopsworks"].attribute? "https" and node["hopsworks"]["https"].attribute? "port"
+    hopsworks_port = node["hopsworks"]["https"]["port"]
+  end
+end
+
+dashboard_endpoint = "hopsworks.glassfish.#{consul_domain}:#{hopsworks_port}"
 
 # Default to hostname found in /etc/hosts, but allow user to override it.
 # First with DNS. Highest priority if user supplies the actual hostname
