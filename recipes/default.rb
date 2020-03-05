@@ -236,7 +236,7 @@ if node.attribute? "hopsworks"
   end
 end
 
-dashboard_endpoint = "hopsworks.glassfish.#{consul_domain}:#{hopsworks_port}"
+dashboard_endpoint = "hopsworks.glassfish.service.#{consul_domain}:#{hopsworks_port}"
 
 # Default to hostname found in /etc/hosts, but allow user to override it.
 # First with DNS. Highest priority if user supplies the actual hostname
