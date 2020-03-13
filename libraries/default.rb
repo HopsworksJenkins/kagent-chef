@@ -125,6 +125,21 @@ module Kagent
     end
 
     def resolve_hostname(ip)
+      max_attempts = 10
+      while true
+        begin
+          return resolve_hostname_internal(ip)
+        rescue StandardError => ex
+          max_attempts -= 1
+          if max_attempts < 0
+            raise ex
+          end
+          sleep(0.5)
+        end
+      end
+    end
+
+    def resolve_hostname_internal(ip)
       require 'resolv'
       resolver = Resolv.new(resolvers=[Resolv::Hosts.new, Resolv::DNS.new])
       hostnames = resolver.getnames(ip)
@@ -140,7 +155,7 @@ module Kagent
         hostnames[-1]
       else
         if hostnames.empty?
-          raise "Cannot resolve the hostname for IP address: #{ip}"
+          raise StandardError.new "Cannot resolve the hostname for IP address: #{ip}"
         end
       	hostnames[0]
       end
