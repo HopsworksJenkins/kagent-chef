@@ -120,3 +120,11 @@ attribute "jupyter/python",
 attribute "kagent/python_conda_versions",
           :description => "CSV of python versions to be used as base environments for Anaconda",
           :type => "string"
+
+attribute "kagent/hopsify/version",
+          :description => "Version of hopsify tool",
+          :type => "string"
+
+attribute "kagent/hopsify/bin_url",
+          :description => "Download URL of hopsify tool",
+          :type => "string"

@@ -138,88 +138,6 @@ if !node['install']['cloud'].empty?
   end
 end
 
-
-case node[:platform]
-when "ubuntu"
- if node[:platform_version].to_f <= 14.04
-   node.default["systemd"] = "false"
- end
-end
-
-deps = ""
-if exists_local("hopsworks","default")
-  deps = "glassfish-domain1.service"
-end
-
-if node[:systemd] == "true"
-  service "#{service_name}" do
-    provider Chef::Provider::Service::Systemd
-    supports :restart => true, :start => true, :stop => true, :enable => true
-    action :nothing
-  end
-
-
-  case node[:platform_family]
-  when "rhel"
-    systemd_script = "/usr/lib/systemd/system/#{service_name}.service"    
-  else # debian
-    systemd_script = "/lib/systemd/system/#{service_name}.service"
-  end
-
-  template systemd_script do
-    source "#{service_name}.service.erb"
-    owner "root"
-    group "root"
-    mode 0755
-    variables({
-              :deps => deps
-              })
-    if node["services"]["enabled"] == "true"
-     notifies :enable, resources(:service => service_name)
-    end
-    notifies :restart, "service[#{service_name}]", :delayed
-  end
-
-# Creating a symlink causes systemctl enable to fail with too many symlinks
-# https://github.com/systemd/systemd/issues/3010
-
-  kagent_config service_name do
-    action :systemd_reload
-  end
-  
-  if node['kagent']['enabled'].casecmp? "true"
-    kagent_config service_name do
-      service "kagent"
-      config_file "#{node["kagent"]["etc"]}/config.ini"
-      log_file "#{node["kagent"]["dir"]}/logs/agent.log"
-      restart_agent false
-    end
-  end  
-else # sysv
-
-  service "#{service_name}" do
-    provider Chef::Provider::Service::Init::Debian
-    supports :restart => true, :start => true, :stop => true, :enable => true
-    action :nothing
-  end
-  
-  template "/etc/init.d/#{service_name}" do
-    source "#{service_name}.erb"
-    owner "root"
-    group "root"
-    mode 0755
-if node["services"]["enabled"] == "true"
-    notifies :enable, resources(:service => service_name)
-end
-    notifies :restart, "service[#{service_name}]", :delayed
-  end
-
-  kagent_config do
-    action :systemd_reload
-  end
-  
-end
-
 private_ip = my_private_ip()
 public_ip = my_public_ip()
 
@@ -293,14 +211,8 @@ template "#{node["kagent"]["etc"]}/config.ini" do
               :private_ip => private_ip,
               :hops_dir => hops_dir,
               :agent_password => agent_password,
-              :kstore => "#{node["kagent"]["keystore_dir"]}/#{hostname}__kstore.jks",
-              :tstore => "#{node["kagent"]["keystore_dir"]}/#{hostname}__tstore.jks",
               :blacklisted_envs => blacklisted_envs
             })
-if node["services"]["enabled"] == "true"  
-  notifies :enable, "service[#{service_name}]"
-end
-  notifies :restart, "service[#{service_name}]", :delayed
 end
 
 # For upgrades we need to CHOWN the directory and the files underneat to certs:certs
@@ -312,16 +224,6 @@ bash "chown_#{node['kagent']['certs_dir']}" do
   only_if { ::Dir.exists?(node['kagent']['certs_dir'])}
 end
 
-bash "chown_#{node['kagent']['certs_dir']}" do
-  code <<-EOH
-    chown #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['etc']}/state_store/crypto_material_state.pkl
-  EOH
-  action :run
-  only_if { ::File.exists?("#{node['kagent']['etc']}/state_store/crypto_material_state.pkl")}
-end
-
-
-
 template "#{node["kagent"]["certs_dir"]}/keystore.sh" do
   source "keystore.sh.erb"
   owner node["kagent"]["certs_user"]
@@ -330,34 +232,109 @@ template "#{node["kagent"]["certs_dir"]}/keystore.sh" do
   variables({:fqdn => hostname})
 end
 
-if node["kagent"]["test"] == false && (not conda_helpers.is_upgrade)
-  hopsworks_alt_url = "https://#{private_recipe_ip("hopsworks","default")}:8181" 
-  if node.attribute? "hopsworks"
-    if node["hopsworks"].attribute? "https" and node["hopsworks"]['https'].attribute? ('port')
-      hopsworks_alt_url = "https://#{private_recipe_ip("hopsworks","default")}:#{node['hopsworks']['https']['port']}"
+hopsworks_alt_url = "https://#{private_recipe_ip("hopsworks","default")}:8181" 
+if node.attribute? "hopsworks"
+  if node["hopsworks"].attribute? "https" and node["hopsworks"]['https'].attribute? ('port')
+    hopsworks_alt_url = "https://#{private_recipe_ip("hopsworks","default")}:#{node['hopsworks']['https']['port']}"
+  end
+end
+
+kagent_hopsify "Register Host" do
+  hopsworks_alt_url hopsworks_alt_url
+  action :register_host
+  not_if { conda_helpers.is_upgrade || node["kagent"]["test"] == true }
+end
+
+kagent_hopsify "Generate x.509" do
+  user node['kagent']['user']
+  group node['kagent']['group']
+  crypto_directory x509_helper.get_crypto_dir(node['kagent']['user-home'])
+  hopsworks_alt_url hopsworks_alt_url
+  action :generate_x509
+  not_if { conda_helpers.is_upgrade || node["kagent"]["test"] == true }
+end
+
+if exists_local("hopsworks", "default")
+  hopsworks_user = "glassfish"
+  hopsworks_group = "glassfish"
+  hopsworks_user_home = "/home/glassfish"
+  if node.attribute?("hopsworks")
+    if node['hopsworks'].attribute?("user")
+      hopsworks_user = node['hopsworks']['user']
+      hopsworks_user_home = "/home/#{hopsworks_user}"
+    end
+    if node['hopsworks'].attribute?("group")
+      hopsworks_user = node['hopsworks']['group']
     end
   end
-  kagent_keys "sign-certs" do
+  # Generate glassfish user certificates here
+  # Cannot do it in hopsworks::default as hopsify is not setup yet
+  # User certs must belong to hopslog group to be able to rotate x509 material
+  group hopsworks_group do
+    action :modify
+    members node['kagent']['certs_user']
+    append true
+    not_if { node['install']['external_users'].casecmp("true") == 0 }
+  end
+
+  kagent_hopsify "Generate x.509" do
+    user hopsworks_user
+    group hopsworks_group
+    crypto_directory x509_helper.get_crypto_dir(hopsworks_user_home)
     hopsworks_alt_url hopsworks_alt_url
-    action :csr
+    common_name "glassfish.service.#{consul_domain}"
+    action :generate_x509
+    not_if { conda_helpers.is_upgrade || node["kagent"]["test"] == true }
   end
 end
 
 kagent_keys "combine_certs" do 
-  action :combine_certs
-end 
-
-bash "convert private key to PKCS#1 format on update" do
-  user "root"
-  group node['kagent']['certs_group']
-  code <<-EOH                                                                                                       
-       openssl rsa -in #{node['kagent']['certs_dir']}/priv.key -out #{node['kagent']['certs_dir']}/priv.key.rsa
-       chmod 640 #{node['kagent']['certs_dir']}/priv.key.rsa
-       chown #{node['kagent']['certs_user']}:#{node['kagent']['certs_group']} #{node['kagent']['certs_dir']}/priv.key.rsa
-  EOH
-  only_if { conda_helpers.is_upgrade and File.exists?("#{node['kagent']['certs_dir']}/priv.key")}
+  action :append2ChefTrustAnchors
 end
 
+service "#{service_name}" do
+  provider Chef::Provider::Service::Systemd
+  supports :restart => true, :start => true, :stop => true, :enable => true
+  action :nothing
+end
+
+case node[:platform_family]
+when "rhel"
+  systemd_script = "/usr/lib/systemd/system/#{service_name}.service"    
+else # debian
+  systemd_script = "/lib/systemd/system/#{service_name}.service"
+end
+
+deps = ""
+if exists_local("hopsworks","default")
+  deps = "glassfish-domain1.service"
+end
+
+template systemd_script do
+  source "#{service_name}.service.erb"
+  owner "root"
+  group "root"
+  mode 0755
+  variables({
+            :deps => deps
+            })
+  if node["services"]["enabled"] == "true"
+    notifies :enable, resources(:service => service_name)
+  end
+  notifies :restart, "service[#{service_name}]", :delayed
+end
+
+kagent_config service_name do
+  action :systemd_reload
+end
+  
+kagent_config service_name do
+  service "kagent"
+  config_file "#{node["kagent"]["etc"]}/config.ini"
+  log_file "#{node["kagent"]["dir"]}/logs/agent.log"
+  restart_agent false
+  only_if { node['kagent']['enabled'].casecmp? "true" }
+end
 
 if node["install"]["addhost"] == 'true'
 
@@ -374,7 +351,6 @@ if node["install"]["addhost"] == 'true'
  end
   
 end  
-
 
 homedir = node['kagent']['user'].eql?("root") ? "/root" : "/home/#{node['kagent']['user']}"
 kagent_keys "#{homedir}" do
