@@ -33,6 +33,10 @@ attribute "kagent/group",
           :description => "group to run kagent as",
           :type => 'string'
 
+attribute "kagent/user-home",
+          :description => "Home directory of kagent user",
+          :type => 'string'
+
 attribute "kagent/certs_user",
           :description => "User managing the host certificates",
           :type => 'string'
