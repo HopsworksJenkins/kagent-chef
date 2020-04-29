@@ -46,7 +46,7 @@ function is_python3 {
 }
 
 if [ "$OP" == "YML" ] ; then
-   export PATH=${PATH}:${HADOOP_DIR}/bin; ${CONDA_DIR}/bin/conda env create -f ${YML_FILE_PATH} -n ${PROJECT}
+   export PATH=${PATH}:${HADOOP_DIR}/bin:/usr/local/bin; ${CONDA_DIR}/bin/conda env create -f ${YML_FILE_PATH} -n ${PROJECT}
 
    if [ $? -ne 0 ] ; then
        exit 2
