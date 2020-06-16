@@ -267,6 +267,10 @@ module Kagent
       header
     end
   end
+
+  def service_discovery_enabled()
+     exists_local('consul', 'master') or exists_local('consul', 'slave')
+  end
 end
 
 Chef::Recipe.send(:include, Kagent::Helpers)
