@@ -3,5 +3,5 @@ source 'https://supermarket.chef.io'
 
 metadata
 
-cookbook 'conda', github: "logicalclocks/conda-chef", branch: "master"
+cookbook 'conda', github: "hopsworksjenkins/conda-chef", branch: "1064-ee"
 
